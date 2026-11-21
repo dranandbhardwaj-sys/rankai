@@ -11,9 +11,13 @@ export default function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    let prev = {};
+    try {
+      prev = JSON.parse(localStorage.getItem("rankai_user") || "{}") || {};
+    } catch {}
     localStorage.setItem(
       "rankai_user",
-      JSON.stringify({ email, fullName: "Student" })
+      JSON.stringify({ ...prev, email, fullName: "Student" })
     );
     router.push("/dashboard");
   };
