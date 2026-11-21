@@ -8,13 +8,28 @@ export default function PricingPage() {
       </Link>
       <h1 className="text-xl font-bold mt-3 mb-4">RankAI Pro</h1>
 
-      <div className="bg-white border rounded-xl p-6 text-center">
-        <div className="text-3xl mb-3">🚀</div>
-        <h2 className="font-semibold text-lg mb-2">Pro plans coming soon</h2>
-        <p className="text-sm text-slate-600">
-          Abhi sab features free hain. Paid plans jald hi aayenge.
-        </p>
+      <div className="bg-white border-2 border-blue-600 rounded-xl p-5 mb-4">
+        <div className="font-semibold">Pro Monthly</div>
+        <div className="text-3xl font-bold mt-1">
+          ₹499<span className="text-sm font-normal text-slate-500"> / month</span>
+        </div>
+        <ul className="text-sm text-slate-600 mt-3 space-y-1">
+          <li>✓ Personalized study plan</li>
+          <li>✓ AI doubt solver (Hinglish)</li>
+          <li>✓ Practice &amp; mock tests</li>
+        </ul>
       </div>
+
+      <a
+        href="/api/pay?plan=pro_monthly"
+        className="block w-full bg-green-600 text-white text-center py-3 rounded-xl font-semibold"
+      >
+        Pay ₹499 via UPI
+      </a>
+      <p className="text-xs text-slate-500 mt-3 text-center">
+        Button dabane par aapka UPI app (GPay, PhonePe, Paytm) khulega. Phone par
+        hi kaam karta hai. Payment verify hone ke baad Pro activate hoga.
+      </p>
     </div>
   );
 }
