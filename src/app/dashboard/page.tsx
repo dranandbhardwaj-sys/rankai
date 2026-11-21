@@ -50,12 +50,6 @@ export default function DashboardPage() {
         >
           Practice
         </Link>
-        <Link
-          href="/pricing"
-          className="block bg-blue-600 text-white rounded-xl p-4 font-medium text-center"
-        >
-          Upgrade Pro
-        </Link>
         <Link href="/" className="block text-center text-sm text-slate-500 py-2">
           Home
         </Link>
