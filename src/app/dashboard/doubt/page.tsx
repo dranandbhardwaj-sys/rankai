@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 export default function DoubtPage() {
   const [question, setQuestion] = useState("");
@@ -22,9 +23,19 @@ export default function DoubtPage() {
       else if (u?.exam === "jee_advanced") exam = "JEE Advanced";
     } catch {}
     try {
+      const { data: sess } = await supabase().auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) {
+        setError("Doubt poochne ke liye pehle login karo.");
+        setLoading(false);
+        return;
+      }
       const r = await fetch("/api/doubt", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ question, exam }),
       });
       const data = await r.json();
@@ -60,6 +71,11 @@ export default function DoubtPage() {
         {loading ? "Soch raha hoon..." : "Doubt poochho"}
       </button>
 
+      {error && error.includes("login") && (
+        <Link href="/login" className="block mt-3 text-sm text-blue-600">
+          Login page par jao →
+        </Link>
+      )}
       {error && (
         <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
           {error}

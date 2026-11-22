@@ -1,16 +1,6 @@
-const MAX_LEN = 1500;
-const WINDOW_MS = 60_000;
-const MAX_REQ = 5;
-const hits = new Map<string, number[]>();
+import { createClient } from "@supabase/supabase-js";
 
-// Best-effort rate limit (per server instance) so one person cannot burn API credit.
-function limited(ip: string) {
-  const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
-  recent.push(now);
-  hits.set(ip, recent);
-  return recent.length > MAX_REQ;
-}
+const MAX_LEN = 1500;
 
 export async function POST(req: Request) {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -21,12 +11,22 @@ export async function POST(req: Request) {
     );
   }
 
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
-  if (limited(ip)) {
-    return Response.json(
-      { error: "Thoda ruko, ek minute mein dobara try karo." },
-      { status: 429 }
-    );
+  // Login zaroori hai. Token browser se aata hai, Supabase se verify hota hai.
+  const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return Response.json({ error: "Pehle login karo." }, { status: 401 });
+  }
+  const sb = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    }
+  );
+  const { data: userData, error: userErr } = await sb.auth.getUser(token);
+  if (userErr || !userData.user) {
+    return Response.json({ error: "Login expire ho gaya. Dobara login karo." }, { status: 401 });
   }
 
   let question = "";
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     question = String(body.question ?? "").trim();
-    exam = String(body.exam ?? exam).slice(0, 30);
+    exam = ["JEE Main", "JEE Advanced", "NEET"].includes(body.exam) ? body.exam : exam;
   } catch {
     return Response.json({ error: "Galat request." }, { status: 400 });
   }
@@ -42,6 +42,18 @@ export async function POST(req: Request) {
     return Response.json(
       { error: `Sawal 1 se ${MAX_LEN} characters ke beech likho.` },
       { status: 400 }
+    );
+  }
+
+  // Roz ki limit database mein (free 3, Pro 50). Pehle count hota hai, phir AI call.
+  const { data: allowed, error: limitErr } = await sb.rpc("consume_doubt");
+  if (limitErr) {
+    return Response.json({ error: "Server setup adhura hai. Baad mein try karo." }, { status: 500 });
+  }
+  if (!allowed) {
+    return Response.json(
+      { error: "Aaj ki free limit khatam. Kal dobara poochho ya Pro lo." },
+      { status: 429 }
     );
   }
 
@@ -75,9 +87,6 @@ export async function POST(req: Request) {
       : "";
     return Response.json({ answer });
   } catch {
-    return Response.json(
-      { error: "Network error. Dobara try karo." },
-      { status: 502 }
-    );
+    return Response.json({ error: "Network error. Dobara try karo." }, { status: 502 });
   }
 }
